@@ -117,7 +117,7 @@ jobs:
     name: Determining current SemVer
     runs-on: ubuntu-latest
     outputs:
-      semVer: ${{ steps.versioning.outputs.version }}
+      semVer: ${{ steps.versioning.outputs.semVer }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -137,23 +137,14 @@ jobs:
 
   docker-build-and-push:
     name: Docker build & push
-#    needs: build-test
+    #    needs: build-test
     needs: [ versioning ]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v4.2.0
-        with:
-          versionSpec: '6.4.x'
-
-      - name: Determine Version
-        id: versioning
-        uses: gittools/actions/gitversion/execute@v4.2.0
-
+#      - uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 0
+#
       - name: Print Version
         run: echo "Version is ${{ needs.versioning.outputs.semVer }}"
 
