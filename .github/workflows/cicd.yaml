@@ -69,5 +69,5 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           ${{ runner.temp }}/scanner/dotnet-sonarscanner begin /k:"chanan-duy_ThePipeline" /o:"chanan-duy" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
-          dotnet build WebApi/WebApi/WebApi.csproj --no-restore -c Release -p:ContinuousIntegrationBuild=true
+          dotnet build WebApi/WebApi/WebApi.csproj -c Release -p:ContinuousIntegrationBuild=true
           ${{ runner.temp }}/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
