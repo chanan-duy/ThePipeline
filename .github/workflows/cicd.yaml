@@ -7,6 +7,8 @@ permissions:
   contents: write
   packages: write
   issues: write
+#  pull-requests: write
+#  checks: write
 
 env:
   REGISTRY: ghcr.io
@@ -61,12 +63,10 @@ jobs:
 
       - name: Test Report
         if: always()
-        uses: dorny/test-reporter@v1
+        uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          name: NUnit Tests
-          path: ./test-results/*.trx
-          reporter: dotnet-trx
-          fail-on-error: true
+          files: ./test-results/*.trx
+          check_name: NUnit Test Results
 
   sast-sonar:
     name: SAST SonarQube analyze
