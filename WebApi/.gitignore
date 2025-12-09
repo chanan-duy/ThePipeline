@@ -1,0 +1,9 @@
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
+WebApi.sln.DotSettings.user
+*.env
+.env.*
+!.env.example
