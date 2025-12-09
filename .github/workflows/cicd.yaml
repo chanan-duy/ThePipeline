@@ -19,6 +19,7 @@ env:
   DOTNET_VERSION: '10.0.x'
   SONAR_PROJECT_KEY: "chanan-duy_ThePipeline"
   SONAR_ORG: "chanan-duy"
+  NUNIT_VERSION: "3.14.0"
 
 jobs:
   build-test:
@@ -28,6 +29,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -44,22 +47,41 @@ jobs:
           dotnet build WebApi/WebApi/WebApi.csproj --no-restore -c Release -p:ContinuousIntegrationBuild=true
           dotnet build WebApi/WebApi.Test/WebApi.Test.csproj --no-restore -c Release
 
-      - name: Run NUnit tests (simplified)
-        id: run-tests
+      - name: Run NUnit tests with coverage
         run: |
           dotnet test WebApi/WebApi.Test/WebApi.Test.csproj \
             --configuration Release \
             --no-build \
             --verbosity normal \
-            --logger "trx;LogFileName=test-results.trx"
+            --collect:"XPlat Code Coverage" \
+            --settings WebApi/WebApi.Test/coverlet.runsettings \
+            --results-directory ./TestResults/ \
+            --logger "trx;LogFileName=test-results.trx" \
+            --logger "nunit;LogFileName=test-results.xml" \
+            --logger "console;verbosity=detailed"
 
-      - name: Upload test results
-        if: always()
+      - name: Install NUnit Report Generator
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool
+
+      - name: Generate HTML coverage report
+        run: |
+          reportgenerator \
+            -reports:./TestResults/**/coverage.cobertura.xml \
+            -targetdir:./TestResults/CoverageReport \
+            -reporttypes:HtmlInline_AzurePipelines;Badges \
+            -title:"WebApi Coverage Report"
+
+      - name: Upload test results and coverage
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: test-results
           path: |
-            **/TestResults/*.trx
+            ./TestResults/**/*.trx
+            ./TestResults/**/*.xml
+            ./TestResults/**/coverage.cobertura.xml
+            ./TestResults/CoverageReport/
           retention-days: 30
 
       - name: Publish Unit Test Results
@@ -67,8 +89,34 @@ jobs:
         if: always()
         with:
           files: |
-            **/TestResults/*.trx
+            ./TestResults/**/*.trx
+            ./TestResults/**/*.xml
           check_name: 'NUnit Test Results'
+          comment_mode: always
+
+      - name: Generate Test Summary
+        run: |
+          # Count passed/failed tests from TRX file
+          TOTAL_TESTS=$(grep -oP '(?<=<Counters total=")[^"]*' ./TestResults/*.trx || echo "0")
+          PASSED_TESTS=$(grep -oP '(?<=<Counters passed=")[^"]*' ./TestResults/*.trx || echo "0")
+          FAILED_TESTS=$(grep -oP '(?<=<Counters failed=")[^"]*' ./TestResults/*.trx || echo "0")
+          
+          echo "## NUnit Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Passed:** $PASSED_TESTS" >> $GITHUB_STEP_SUMMARY
+          echo "❌ **Failed:** $FAILED_TESTS" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **Total:** $TOTAL_TESTS" >> $GITHUB_STEP_SUMMARY
+          
+          if [ $FAILED_TESTS -gt 0 ]; then
+            echo "::warning::Some tests failed!"
+          fi
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: ./TestResults/CoverageReport/
+          retention-days: 30
 
   sast-sonar:
     name: SAST SonarQube Analysis
@@ -93,23 +141,68 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Install SonarScanner
-        run: |
-          dotnet tool install --global dotnet-sonarscanner
+      - name: Cache SonarQube packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-sonar
 
-      - name: Run SonarQube analysis
+      - name: Download test results and coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results
+          path: ./TestResults/
+
+      - name: Install SonarScanner for .NET
+        run: |
+          dotnet tool update dotnet-sonarscanner --global
+
+      - name: Run SonarQube analysis for NUnit
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: "https://sonarcloud.io"
         run: |
+          # Start SonarQube analysis with NUnit-specific settings
           dotnet sonarscanner begin \
             /k:"${{ env.SONAR_PROJECT_KEY }}" \
             /o:"${{ env.SONAR_ORG }}" \
             /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
-            /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.cs.vstest.reportsPaths="**/TestResults/*.trx"
+            /d:sonar.host.url="${{ env.SONAR_HOST_URL }}" \
+            /d:sonar.cs.vstest.reportsPaths="TestResults/*.trx" \
+            /d:sonar.cs.nunit.reportsPaths="TestResults/*.xml" \
+            /d:sonar.cs.opencover.reportsPaths="TestResults/**/coverage.opencover.xml" \
+            /d:sonar.coverageReportPaths="TestResults/**/coverage.cobertura.xml" \
+            /d:sonar.exclusions="**/bin/**,**/obj/**,**/wwwroot/**,**/node_modules/**" \
+            /d:sonar.coverage.exclusions="**/*Test*.cs,**/*.Tests.cs,**/Test*/**" \
+            /d:sonar.test.exclusions="**/obj/**" \
+            /d:sonar.cs.nunit.testProjectPattern="*Test*.csproj" \
+            /d:sonar.verbose="true" \
+            /d:sonar.sourceEncoding="UTF-8" \
+            /d:sonar.dotnet.excludeTestProjects=true
 
+          # Build the project
           dotnet build WebApi/WebApi/WebApi.csproj \
             --configuration Release \
-            --no-restore
+            --no-restore \
+            /p:ContinuousIntegrationBuild=true
 
+          # End SonarQube analysis
           dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+
+      - name: SonarQube Quality Gate Check
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          scanMetadataComment: true
+          scanMetadataCommentOffline: false
+
+      - name: Upload SonarQube Quality Gate Report
+        if: always()
+        run: |
+          echo "## SonarQube Quality Gate Results" >> $GITHUB_STEP_SUMMARY
+          echo "🔍 **Project:** ${{ env.SONAR_PROJECT_KEY }}" >> $GITHUB_STEP_SUMMARY
+          echo "🏢 **Organization:** ${{ env.SONAR_ORG }}" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **View Report:** https://sonarcloud.io/project/overview?id=${{ env.SONAR_PROJECT_KEY }}" >> $GITHUB_STEP_SUMMARY
