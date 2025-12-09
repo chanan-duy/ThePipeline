@@ -36,7 +36,30 @@ jobs:
         run: dotnet build WebApi/WebApi/WebApi.csproj --no-restore -c Debug -p:ContinuousIntegrationBuild=true # for now
 
       - name: Unit Tests
-        run: dotnet test WebApi/WebApi.Test/WebApi.Test.csproj --no-build --verbosity normal
+        run: |
+          mkdir -p ./test-results
+          dotnet test WebApi/WebApi.Test/WebApi.Test.csproj \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=test-results.trx" \
+            --results-directory ./test-results
+
+      - name: Publish Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./test-results/
+          retention-days: 7
+
+      - name: Test Report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: NUnit Tests
+          path: ./test-results/*.trx
+          reporter: dotnet-trx
+          fail-on-error: true
 
   sast-sonar:
     name: SAST SonarQube analyze
