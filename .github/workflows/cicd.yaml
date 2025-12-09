@@ -132,9 +132,27 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ needs.versioning.outputs.semVer }}
             ${{ env.IMAGE_NAME }}:latest
 
+  dast-analyze:
+    name: DAST Analyze
+    needs: [ versioning, docker-build-push ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start Container for DAST
+        run: |
+          docker run -d -p 8080:8080 --name test-app ${{ env.IMAGE_NAME }}:${{ needs.versioning.outputs.semVer }}
+          sleep 10
+
+      - name: OWASP ZAP Scan
+        uses: zaproxy/action-baseline@v0.15.0
+        with:
+          target: 'http://localhost:8080'
+          fail_action: false
+          allow_issue_writing: false
+
+
   deploy-minikube:
     name: Deploy to Minikube (4 Zones)
-    needs: [ versioning, docker-build-push ]
+    needs: [ versioning, dast-analyze ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -204,22 +222,6 @@ jobs:
           sleep 15
           kubectl get pods --all-namespaces
 
-  dast-analyze:
-    name: DAST Analyze
-    needs: [ versioning, deploy-minikube ]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Start Container for DAST
-        run: |
-          docker run -d -p 8080:8080 --name test-app ${{ env.IMAGE_NAME }}:${{ needs.versioning.outputs.semVer }}
-          sleep 10
-
-      - name: OWASP ZAP Scan
-        uses: zaproxy/action-baseline@v0.15.0
-        with:
-          target: 'http://localhost:8080'
-          fail_action: false
-          allow_issue_writing: false
 
   create-release:
     name: Create Release
