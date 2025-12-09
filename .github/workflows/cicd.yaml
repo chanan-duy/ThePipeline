@@ -14,27 +14,27 @@ env:
   DOTNET_VERSION: '10.0.x'
 
 jobs:
-#  build-test:
-#    name: Build and Test
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v4
-#        with:
-#          fetch-depth: 0
-#
-#      - name: Setup .NET
-#        uses: actions/setup-dotnet@v4
-#        with:
-#          dotnet-version: ${{ env.DOTNET_VERSION }}
-#
-#      - name: Restore dependencies
-#        run: dotnet restore WebApi/WebApi/WebApi.csproj
-#
-#      - name: Build
-#        run: dotnet build WebApi/WebApi/WebApi.csproj --no-restore -c Release -p:ContinuousIntegrationBuild=true
-#
-#      - name: Unit Tests
-#        run: dotnet test WebApi/WebApi.Test/WebApi.Test.csproj --no-build --verbosity normal
+  build-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore WebApi/WebApi/WebApi.csproj
+
+      - name: Build
+        run: dotnet build WebApi/WebApi/WebApi.csproj --no-restore -c Release -p:ContinuousIntegrationBuild=true
+
+      - name: Unit Tests
+        run: dotnet test WebApi/WebApi.Test/WebApi.Test.csproj --no-build --verbosity normal
 
   sast-sonar:
     name: SAST SonarQube analyze
@@ -74,5 +74,5 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           ${{ runner.temp }}/scanner/dotnet-sonarscanner begin /k:"chanan-duy_ThePipeline" /o:"chanan-duy" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
-          dotnet build WebApi/WebApi/WebApi.csproj -c Release -p:ContinuousIntegrationBuild=true
+          dotnet build WebApi/WebApi/WebApi.csproj
           ${{ runner.temp }}/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
