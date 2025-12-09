@@ -136,7 +136,7 @@ jobs:
   docker-build-and-push:
     name: Docker build & push
     #    needs: build-test
-    needs: [ versioning ]
+    needs: [ versioning, build-test ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
