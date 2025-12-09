@@ -54,7 +54,7 @@ jobs:
             --no-build \
             --verbosity normal \
             --collect:"XPlat Code Coverage" \
-            --settings coverlet.runsettings \
+            --settings WebApi/WebApi.Test/coverlet.runsettings \
             --results-directory ./TestResults/ \
             --logger "trx;LogFileName=test-results.trx" \
             --logger "nunit;LogFileName=test-results.xml" \
