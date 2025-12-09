@@ -1,6 +1,6 @@
 ﻿# WebApi.Test
 
-Тесты для `WebApi`
+Тесты для [`WebApi`](../WebApi)
 
 - `Unit` - unit тесты
 - `Integration` - интеграционные

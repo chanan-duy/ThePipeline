@@ -6,4 +6,4 @@
 
 Есть только один эндпоинт: `http://localhost:5030/api/weather`
 
-Тесты в `../WebApiTests`
+Тесты в [`../WebApiTests`](../WebApi.Test)
