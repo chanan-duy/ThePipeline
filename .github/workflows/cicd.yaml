@@ -28,7 +28,9 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Restore dependencies
-        run: dotnet restore WebApi/WebApi/WebApi.csproj
+        run: |
+          dotnet restore WebApi/WebApi/WebApi.csproj
+          dotnet restore WebApi/WebApi.Test/WebApi.Test.csproj
 
       - name: Build
         run: dotnet build WebApi/WebApi/WebApi.csproj --no-restore -c Debug -p:ContinuousIntegrationBuild=true # for now
@@ -38,6 +40,7 @@ jobs:
 
   sast-sonar:
     name: SAST SonarQube analyze
+    needs: build-test
     runs-on: ubuntu-latest
     steps:
       - name: Set up JDK 17
