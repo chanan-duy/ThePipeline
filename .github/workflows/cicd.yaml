@@ -7,8 +7,8 @@ permissions:
   contents: write
   packages: write
   issues: write
-#  pull-requests: write
-#  checks: write
+  pull-requests: write
+  checks: write
 
 env:
   REGISTRY: ghcr.io
