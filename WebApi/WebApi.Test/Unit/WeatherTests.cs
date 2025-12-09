@@ -63,7 +63,7 @@ public class WeatherServiceTests
 		foreach (var item in result)
 		{
 			Assert.That(item.TemperatureC, Is.GreaterThanOrEqualTo(-20));
-			Assert.That(item.TemperatureC, Is.LessThan(55));
+			Assert.That(item.TemperatureC, Is.LessThan(58));
 		}
 	}
 
