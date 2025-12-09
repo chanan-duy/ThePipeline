@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="07dfb2be-b98c-491a-bbd1-db39041dcea5" name="Changes" comment="cicd++">
+    <list default="true" id="07dfb2be-b98c-491a-bbd1-db39041dcea5" name="Changes" comment="cicd sonar++">
       <change beforePath="$PROJECT_DIR$/.github/workflows/cicd.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/cicd.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
@@ -64,6 +64,7 @@
     <MESSAGE value="`ThePipeline` root init" />
     <MESSAGE value="Initial cicd testing" />
     <MESSAGE value="cicd++" />
-    <option name="LAST_COMMIT_MESSAGE" value="cicd++" />
+    <MESSAGE value="cicd sonar++" />
+    <option name="LAST_COMMIT_MESSAGE" value="cicd sonar++" />
   </component>
 </project>
