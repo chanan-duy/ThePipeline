@@ -78,25 +78,24 @@ jobs:
 
       - name: Unit Tests
         run: |
-          dotnet test WebApi/WebApi.Test/WebApi.Test.csproj --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+          dotnet test WebApi/WebApi.Test/WebApi.Test.csproj \
+            --verbosity normal \
+            --logger "trx;LogFileName=test_results.trx" \
+            --results-directory ./TestResults
 
       - name: Test Report
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          files: '**/*.trx'
+          files: 'TestResults/*.trx'
 
       - name: SonarQube End
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
-      - name: Generate OpenAPI Spec
-        run: |
-          dotnet new tool-manifest --force
-          dotnet tool install Swashbuckle.AspNetCore.Cli
-          dotnet publish WebApi/WebApi/WebApi.csproj -c Release -o ./publish
-          dotnet swagger tofile --output swagger.json ./publish/WebApi.dll v1
+      - name: Publish for Release
+        run: dotnet publish WebApi/WebApi/WebApi.csproj -c Release -o ./publish /p:Version=${{ needs.versioning.outputs.semVer }}
 
       - name: Zip Release Artifacts
         run: |
@@ -108,12 +107,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-assets
-          path: |
-            webapi-release.zip
-            swagger.json
+          path: webapi-release.zip
 
   docker-build-push:
-    if: false
     name: Docker Build & Push
     needs: [ versioning, build-test-scan ]
     runs-on: ubuntu-latest
@@ -137,7 +133,6 @@ jobs:
             ${{ env.IMAGE_NAME }}:latest
 
   deploy-minikube:
-    if: false
     name: Deploy to Minikube (4 Zones)
     needs: [ versioning, docker-build-push ]
     runs-on: ubuntu-latest
@@ -206,11 +201,10 @@ jobs:
 
       - name: Verify Deployments
         run: |
-          sleep 15 # Даем время на старт подов
+          sleep 15
           kubectl get pods --all-namespaces
 
   dast-analyze:
-    if: false
     name: DAST Analyze
     needs: [ versioning, deploy-minikube ]
     runs-on: ubuntu-latest
@@ -228,8 +222,7 @@ jobs:
           allow_issue_writing: false
 
   create-release:
-    if: false
-    name: Create Release & Docs
+    name: Create Release
     needs: [ versioning, build-test-scan, dast-analyze, deploy-minikube ]
     runs-on: ubuntu-latest
     steps:
@@ -271,11 +264,8 @@ jobs:
           body: |
             ## Changes in this version
             ${{ steps.build_changelog.outputs.changelog }}
-            
-            Documentation attached: `swagger.json`
           files: |
             webapi-release.zip
-            swagger.json
           draft: false
           prerelease: false
         env:
