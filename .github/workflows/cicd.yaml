@@ -91,6 +91,14 @@ jobs:
             --logger "trx;LogFileName=test_results.trx" \
             --results-directory ./TestResults
 
+      - name: Publish Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./TestResults/
+          retention-days: 7
+
       - name: Test Report
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@v2
