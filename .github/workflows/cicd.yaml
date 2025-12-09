@@ -33,13 +33,20 @@ jobs:
           dotnet restore WebApi/WebApi.Test/WebApi.Test.csproj
 
       - name: Build
-        run: dotnet build WebApi/WebApi/WebApi.csproj --no-restore -c Debug -p:ContinuousIntegrationBuild=true # for now
+        run: dotnet build WebApi/WebApi/WebApi.csproj --no-restore -c Release -p:ContinuousIntegrationBuild=true
+
+      - name: Build Tests
+        run: |
+          dotnet build WebApi/WebApi.Test/WebApi.Test.csproj \
+            --configuration Debug \
+            --no-restore
 
       - name: Unit Tests
         run: |
           mkdir -p ./test-results
           dotnet test WebApi/WebApi.Test/WebApi.Test.csproj \
             --no-build \
+            --no-restore \
             --verbosity normal \
             --logger "trx;LogFileName=test-results.trx" \
             --results-directory ./test-results
