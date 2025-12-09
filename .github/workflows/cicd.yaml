@@ -149,7 +149,6 @@ jobs:
           fail_action: false
           allow_issue_writing: false
 
-
   deploy-minikube:
     name: Deploy to Minikube (4 Zones)
     needs: [ versioning, dast-analyze ]
@@ -222,7 +221,6 @@ jobs:
           sleep 15
           kubectl get pods --all-namespaces
 
-
   create-release:
     name: Create Release
     needs: [ versioning, build-test-scan, dast-analyze, deploy-minikube ]
@@ -274,7 +272,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   notify-finish:
-    needs: [ create-release ]
+    needs: [ create-release, versioning ]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -285,7 +283,7 @@ jobs:
           to: ${{ secrets.TELEGRAM_TO }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
           message: |
-            ✅ Release v${{ needs.create-release.outputs.tag_name }} is READY!
+            ✅ Release v${{ needs.versioning.outputs.semVer }} is READY!
             
             - Docker Image Pushed
             - Deployed to 4 Zones (Minikube)
