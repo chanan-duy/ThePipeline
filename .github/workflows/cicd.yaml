@@ -13,7 +13,6 @@ permissions:
   checks: write
 
 env:
-  REGISTRY: ghcr.io
   IMAGE_NAME: chananduy/thepipeline
   DOTNET_VERSION: '10.0.x'
 
@@ -143,7 +142,6 @@ jobs:
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
@@ -153,11 +151,11 @@ jobs:
           context: .
           file: WebApi/WebApi/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.versioning.outputs.semVer }},${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          tags: ${{ env.IMAGE_NAME }}:${{ steps.versioning.outputs.semVer }},${{ env.IMAGE_NAME }}:latest
 
       - name: Start Container for DAST
         run: |
-          docker run -d -p 8080:8080 --name test-app ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.versioning.outputs.semVer }}
+          docker run -d -p 8080:8080 --name test-app ${{ env.IMAGE_NAME }}:${{ steps.versioning.outputs.semVer }}
           sleep 10
 
       - name: OWASP ZAP Scan (DAST)
