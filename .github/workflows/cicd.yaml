@@ -1,0 +1,61 @@
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: write
+  packages: write
+  issues: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: my-org/aspnet-api
+  DOTNET_VERSION: '10.0.x'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.semantic.outputs.new_release_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Calculate Version (Dry Run)
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          dry_run: true
+          branch: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore dependencies
+        run: dotnet restore WebApi/WebApi/WebApi.csproj
+
+      - name: Build
+        run: dotnet build WebApi/WebApi/WebApi.csproj --no-restore -c Release
+
+#      - name: Run SAST (Trivy FS)
+#        uses: aquasecurity/trivy-action@master
+#        with:
+#          scan-type: 'fs'
+#          ignore-unfixed: true
+#          format: 'table'
+#          exit-code: '1'
+#          severity: 'CRITICAL,HIGH'
+#
+#      - name: Build (with Version Injection)
+#        run: |
+#          ver="${{ steps.semantic.outputs.new_release_version }}"
+#          if [ -z "$ver" ]; then ver="0.0.0"; fi
+#          dotnet build --no-restore -c Release /p:Version=$ver
+
+      - name: Unit Tests
+        run: dotnet test WebApi/WebApi.Test/WebApi.Test.csproj --no-build --verbosity normal
