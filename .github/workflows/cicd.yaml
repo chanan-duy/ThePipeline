@@ -257,7 +257,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   notify-finish:
-    needs: [ create-release, versioning ]
+    needs: [ versioning, build-test-scan, docker-build-push, dast-analyze, deploy-minikube, create-release ]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -284,7 +284,7 @@ jobs:
             🔗 <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">View Pipeline</a>
 
       - name: Notify Failure
-        if: ${{ needs.create-release.result == 'failure' || failure() }}
+        if: ${{ needs.create-release.result != 'success' }}
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
@@ -296,5 +296,10 @@ jobs:
             📂 <b>Repo:</b> ${{ github.repository }}
             🌿 <b>Branch:</b> ${{ github.ref_name }}
             👤 <b>User:</b> ${{ github.actor }}
+            
+            <b>Failed Stage Check:</b>
+            Build/Test: ${{ needs.build-test-scan.result }}
+            Docker: ${{ needs.docker-build-push.result }}
+            Deploy: ${{ needs.deploy-minikube.result }}
             
             🔗 <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">👉 Check Logs Here</a>
