@@ -251,12 +251,52 @@ jobs:
         with:
           name: release-assets
 
+      - name: Build Changelog
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@v5
+        with:
+          mode: "COMMIT"
+          configurationJson: |
+            {
+              "template": "#{{CHANGELOG}}",
+              "categories": [
+                {
+                  "title": "## 🚀 Features",
+                  "labels": ["^feat", "^feature"]
+                },
+                {
+                  "title": "## 🐛 Fixes",
+                  "labels": ["^fix", "^bug", "^hotfix"]
+                },
+                {
+                  "title": "## 🔒 Security",
+                  "labels": ["^sec", "^security"]
+                },
+                {
+                  "title": "## 🛠 Maintenance & Ops",
+                  "labels": ["^chore", "^ci", "^build", "^refactor", "^perf", "^style"]
+                },
+                {
+                  "title": "## 🧪 Testing",
+                  "labels": ["^test"]
+                },
+                {
+                  "title": "## 📦 Other Changes",
+                  "labels": []
+                }
+              ]
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.versioning.outputs.semVer }}
           name: Release v${{ needs.versioning.outputs.semVer }}
-          generate_release_notes: true
+          body: |
+            ## Changes in this version
+            ${{ steps.build_changelog.outputs.changelog }}
           files: |
             webapi-release.zip
           draft: false
