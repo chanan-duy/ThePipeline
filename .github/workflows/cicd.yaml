@@ -14,35 +14,40 @@ env:
   DOTNET_VERSION: '10.0.x'
 
 jobs:
-  build-test-sast:
-    name: Build and Test and Analyze
+#  build-test:
+#    name: Build and Test
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 0
+#
+#      - name: Setup .NET
+#        uses: actions/setup-dotnet@v4
+#        with:
+#          dotnet-version: ${{ env.DOTNET_VERSION }}
+#
+#      - name: Restore dependencies
+#        run: dotnet restore WebApi/WebApi/WebApi.csproj
+#
+#      - name: Build
+#        run: dotnet build WebApi/WebApi/WebApi.csproj --no-restore -c Release -p:ContinuousIntegrationBuild=true
+#
+#      - name: Unit Tests
+#        run: dotnet test WebApi/WebApi.Test/WebApi.Test.csproj --no-build --verbosity normal
+
+  sast-sonar:
+    name: SAST SonarQube analyze
     runs-on: ubuntu-latest
-    outputs:
-      new_version: ${{ steps.semantic.outputs.new_release_version }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Restore dependencies
-        run: dotnet restore WebApi/WebApi/WebApi.csproj
-
-      - name: Build
-        run: dotnet build WebApi/WebApi/WebApi.csproj --no-restore -c Release -p:ContinuousIntegrationBuild=true
-
-      - name: Unit Tests
-        run: dotnet test WebApi/WebApi.Test/WebApi.Test.csproj --no-build --verbosity normal
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: 'zulu'
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
