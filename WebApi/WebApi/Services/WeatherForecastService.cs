@@ -15,7 +15,7 @@ public class WeatherForecastService(ILogger<WeatherForecastService> logger) : IW
 			new WeatherForecastDto
 			(
 				DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-				Random.Shared.Next(-20, 55),
+				Random.Shared.Next(-20, 58),
 				summaries[Random.Shared.Next(summaries.Length)]
 			));
 
