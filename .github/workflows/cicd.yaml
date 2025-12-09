@@ -31,7 +31,7 @@ jobs:
         run: dotnet restore WebApi/WebApi/WebApi.csproj
 
       - name: Build
-        run: dotnet build WebApi/WebApi/WebApi.csproj --no-restore -c Release -p:ContinuousIntegrationBuild=true
+        run: dotnet build WebApi/WebApi/WebApi.csproj --no-restore -c Debug -p:ContinuousIntegrationBuild=true # for now
 
       - name: Unit Tests
         run: dotnet test WebApi/WebApi.Test/WebApi.Test.csproj --no-build --verbosity normal
