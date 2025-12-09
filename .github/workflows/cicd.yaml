@@ -113,15 +113,11 @@ jobs:
           dotnet build WebApi/WebApi/WebApi.csproj
           ${{ runner.temp }}/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
-  docker-and-dast:
-    name: Docker push and DAST analyze
-    #    needs: build-test
+  versioning:
+    name: Determining current SemVer
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     outputs:
-      version: ${{ steps.versioning.outputs.version }}
+      semVer: ${{ steps.versioning.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -139,6 +135,28 @@ jobs:
       - name: Print Version
         run: echo "Version is ${{ steps.versioning.outputs.semVer }}"
 
+  docker-build-and-push:
+    name: Docker build & push
+#    needs: build-test
+    needs: [ versioning ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4.2.0
+        with:
+          versionSpec: '6.4.x'
+
+      - name: Determine Version
+        id: versioning
+        uses: gittools/actions/gitversion/execute@v4.2.0
+
+      - name: Print Version
+        run: echo "Version is ${{ needs.versioning.outputs.semVer }}"
+
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
@@ -151,11 +169,24 @@ jobs:
           context: WebApi
           file: WebApi/WebApi/Dockerfile
           push: true
-          tags: ${{ env.IMAGE_NAME }}:${{ steps.versioning.outputs.semVer }},${{ env.IMAGE_NAME }}:latest
+          tags: ${{ env.IMAGE_NAME }}:${{ needs.versioning.outputs.semVer }},${{ env.IMAGE_NAME }}:latest
+
+  docker-dast-analyze:
+    name: Docker DAST Analyze (OWASP ZAP)
+    needs: [ versioning, docker-build-and-push ]
+    steps:
+      - name: Print Version
+        run: echo "Version is ${{ needs.versioning.outputs.semVer }}"
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Start Container for DAST
         run: |
-          docker run -d -p 8080:8080 --name test-app ${{ env.IMAGE_NAME }}:${{ steps.versioning.outputs.semVer }}
+          docker run -d -p 8080:8080 --name test-app ${{ env.IMAGE_NAME }}:${{ needs.versioning.outputs.semVer }}
           sleep 10
 
       - name: OWASP ZAP Scan (DAST)
@@ -164,3 +195,4 @@ jobs:
           target: 'http://localhost:8080'
           fail_action: false
           allow_issue_writing: false
+
