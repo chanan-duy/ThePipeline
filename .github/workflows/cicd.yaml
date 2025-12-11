@@ -175,7 +175,6 @@ jobs:
       - name: Setup Minikube
         uses: medyagh/setup-minikube@master
         with:
-          cpu: 2
           memory: 4000m
 
       - name: Deploy to 4 Environments
