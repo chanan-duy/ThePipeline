@@ -189,7 +189,7 @@ jobs:
 
           for nm in $namespaces; do
             echo Deploying helm chart to namespace "$nm" with image tag ${{ needs.versioning.outputs.semVer }}
-            helm upgrade -i --namespace "$nm" dev --set image.tag=${{ needs.versioning.outputs.semVer }} mchart ./chart
+            helm upgrade -i --namespace "$nm" --set image.tag=${{ needs.versioning.outputs.semVer }} mchart ./chart
           done
 
       - name: Verify Deployments
