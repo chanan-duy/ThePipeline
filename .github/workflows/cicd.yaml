@@ -179,61 +179,22 @@ jobs:
 
       - name: Deploy to 4 Environments
         run: |
-          kubectl create ns dev
-          kubectl create ns test
-          kubectl create ns stage
-          kubectl create ns prod
+          helm lint ./chart
 
-          cat <<EOF > deployment.yaml
-          apiVersion: apps/v1
-          kind: Deployment
-          metadata:
-            name: webapi
-          spec:
-            replicas: 1
-            selector:
-              matchLabels:
-                app: webapi
-            template:
-              metadata:
-                labels:
-                  app: webapi
-              spec:
-                containers:
-                - name: webapi
-                  image: ${{ env.IMAGE_NAME }}:${{ needs.versioning.outputs.semVer }}
-                  ports:
-                  - containerPort: 8080
-          ---
-          apiVersion: v1
-          kind: Service
-          metadata:
-            name: webapi-svc
-          spec:
-            selector:
-              app: webapi
-            ports:
-              - protocol: TCP
-                port: 80
-                targetPort: 8080
-            type: ClusterIP
-          EOF
+          namespaces="dev test stage prod"
 
-          echo "Deploying to DEV..."
-          kubectl apply -f deployment.yaml -n dev
-          
-          echo "Deploying to TEST..."
-          kubectl apply -f deployment.yaml -n test
-          
-          echo "Deploying to STAGE..."
-          kubectl apply -f deployment.yaml -n stage
-          
-          echo "Deploying to PROD..."
-          kubectl apply -f deployment.yaml -n prod
+          for nm in $namespaces; do
+            kubectl create ns "$nm"
+          done
+
+          for nm in $namespaces; do
+            echo Deploying helm chart to namespace "$nm" with image tag ${{ needs.versioning.outputs.semVer }}
+            helm upgrade -i --namespace "$nm" dev --set image.tag=${{ needs.versioning.outputs.semVer }} mchart ./chart
+          done
 
       - name: Verify Deployments
         run: |
-          sleep 15
+          sleep 10
           kubectl get pods --all-namespaces
 
   create-release:
